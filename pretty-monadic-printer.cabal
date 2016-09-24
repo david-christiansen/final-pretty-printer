@@ -9,7 +9,7 @@ maintainer:          david.darais@gmail.com
 -- copyright:           
 category:            Text
 build-type:          Simple
-extra-source-files:  ChangeLog.md
+--extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 library
