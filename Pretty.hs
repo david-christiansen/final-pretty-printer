@@ -82,7 +82,7 @@ data PEnv w ann fmt = PEnv
   , nesting :: w
   , layout :: Layout
   , failure :: Failure
-  , formatting :: [fmt] -- ^ A stack of formatting codes to be combined with the monoid op
+  , formatting :: fmt -- ^ A stack of formatting codes to be combined with the monoid op
   , formatAnn :: ann -> fmt
   }
 
@@ -99,10 +99,10 @@ localNesting :: (MonadReader (PEnv w ann fmt) m) => (w -> w) -> m a -> m a
 localNesting f = local $ \ r -> r { nesting = f (nesting r) }
 
 askFormat :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m fmt
-askFormat = mconcat . formatting <$> ask
+askFormat = formatting <$> ask
 
-localFormat :: (MonadReader (PEnv w ann fmt) m) => fmt -> m a -> m a
-localFormat format = local $ \ r -> r { formatting =  format : formatting r }
+localFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => fmt -> m a -> m a
+localFormat format = local $ \ r -> r { formatting =  formatting r `mappend` format }
 
 askFormatAnn :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m (ann -> fmt)
 askFormatAnn = formatAnn <$> ask

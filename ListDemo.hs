@@ -36,7 +36,7 @@ env0 = PEnv
   , layout = Break
   , failure = CantFail
   , nesting = 0
-  , formatting = []
+  , formatting = mempty
   , formatAnn = const mempty
   }
 
