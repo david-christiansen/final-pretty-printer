@@ -28,4 +28,5 @@ library
       base == 4.9.*
     , mtl  == 2.2.*
     , text == 1.2.*
+    , ansi-terminal == 0.6.*
   -- hs-source-dirs:

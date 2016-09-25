@@ -23,6 +23,8 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import System.Console.ANSI
+
 import Pretty
 
 -- Constructor names or built-in syntax
@@ -45,6 +47,7 @@ state0 = PState
   { curLine = []
   }
 
+-- For plain text pretty printing
 newtype DocM a = DocM { unDocM :: RWST (PEnv Int HsAnn ()) (POut Int HsAnn) (PState Int ()) Maybe a }
   deriving
     ( Functor, Applicative, Monad
@@ -81,7 +84,7 @@ instance Measure Int () DocM where
   measure = return . runIdentity . measure
 
 instance Pretty Text where
-  pretty = text . T.pack . show
+  pretty = annotate Ctor . text . T.pack . show
 
 instance (Pretty a) => Pretty [a] where
   pretty = collection (annotate Stx "[") (annotate Stx "]") (annotate Stx ",") . map pretty
@@ -114,3 +117,30 @@ toHtml = snd . runWriter . render openTag closeTag tell . execDoc
   where openTag Ctor = tell "<span class=\"constructor\">"
         openTag Stx  = tell "<span class=\"syntax\">"
         closeTag _   = tell "</span>"
+
+dumpDoc :: Doc -> IO ()
+dumpDoc = flip evalStateT [] . render openTag closeTag out . execDoc
+  where out :: String -> StateT [HsAnn] IO ()
+        out = lift . putStr
+        toSGR :: HsAnn -> [SGR]
+        toSGR Ctor = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red]
+        toSGR Stx  = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Black]
+        updateColor :: StateT [HsAnn] IO ()
+        updateColor =
+          lift . setSGR =<< mconcat . map toSGR . reverse <$> get
+        openTag :: HsAnn -> StateT [HsAnn] IO ()
+        openTag ann = modify (ann:) >> updateColor
+        closeTag :: HsAnn -> StateT [HsAnn] IO ()
+        closeTag _  = modify tail   >> updateColor
+
+---------------
+-- Test docs --
+---------------
+
+shortList :: [[Text]]
+shortList = [["a", "b", "c"], [], ["longer"]]
+
+longList :: [[Text]]
+longList = [map (T.pack . show) [1..10], [], map (T.pack . flip replicate 'a') [1..10]]
+
+-- To try, eval dumpDoc (pretty shortList) or dumpDoc (pretty longList) in console GHCI
