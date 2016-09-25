@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 library
   default-language: Haskell2010
-  exposed-modules:  Pretty
+  exposed-modules:  Pretty, ListDemo
   -- other-modules:
   other-extensions:
       KindSignatures
