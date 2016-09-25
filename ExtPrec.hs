@@ -9,6 +9,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ExtPrec where
 
@@ -41,34 +42,54 @@ state0 = PState
   { curLine = []
   }
 
-data PrecEnv = PrecEnv
+-- Environment for Prec extension
+
+data PrecEnv ann = PrecEnv
   { level :: Int
   , bumped :: Bool
+  , lparen :: (Text, Maybe ann)
+  , rparen :: (Text, Maybe ann)
   }
 
-precEnv0 :: PrecEnv
+precEnv0 :: PrecEnv ann
 precEnv0 = PrecEnv
   { level = 0
   , bumped = False
+  , lparen = ("(", Nothing)
+  , rparen = (")", Nothing)
   }
 
-class MonadReaderPrec m where
-  askPrecEnv :: m PrecEnv
-  localPrecEnv :: (PrecEnv -> PrecEnv) -> m a -> m a
+-- Type class for Prec extension
 
-askLevel :: (Functor m, MonadReaderPrec m) => m Int
+class MonadReaderPrec ann m | m -> ann where
+  askPrecEnv :: m (PrecEnv ann)
+  localPrecEnv :: (PrecEnv ann -> PrecEnv ann) -> m a -> m a
+
+askLevel :: (Functor m, MonadReaderPrec ann m) => m Int
 askLevel = level <$> askPrecEnv
 
-localLevel :: (Functor m, MonadReaderPrec m) => (Int -> Int) -> m a -> m a
+localLevel :: (Functor m, MonadReaderPrec ann m) => (Int -> Int) -> m a -> m a
 localLevel f = localPrecEnv $ \ pe -> pe { level = f $ level pe }
 
-askBumped :: (Functor m, MonadReaderPrec m) => m Bool
+askBumped :: (Functor m, MonadReaderPrec ann m) => m Bool
 askBumped = bumped <$> askPrecEnv
 
-localBumped :: (Functor m, MonadReaderPrec m) => (Bool -> Bool) -> m a -> m a
+localBumped :: (Functor m, MonadReaderPrec ann m) => (Bool -> Bool) -> m a -> m a
 localBumped f = localPrecEnv $ \ pe -> pe { bumped = f $ bumped pe }
 
-class (MonadPretty w ann fmt m, MonadReaderPrec m) => MonadPrettyPrec w ann fmt m | m -> w, m -> ann, m -> fmt
+askLParen :: (Functor m, MonadReaderPrec ann m) => m (Text, Maybe ann)
+askLParen = lparen <$> askPrecEnv
+
+localLParen :: (Functor m, MonadReaderPrec ann m) => ((Text, Maybe ann) -> (Text, Maybe ann)) -> m a -> m a
+localLParen f = localPrecEnv $ \ pe -> pe { lparen = f $ lparen pe }
+
+askRParen :: (Functor m, MonadReaderPrec ann m) => m (Text, Maybe ann)
+askRParen = rparen <$> askPrecEnv
+
+localRParen :: (Functor m, MonadReaderPrec ann m) => ((Text, Maybe ann) -> (Text, Maybe ann)) -> m a -> m a
+localRParen f = localPrecEnv $ \ pe -> pe { rparen = f $ rparen pe }
+
+class (MonadPretty w ann fmt m, MonadReaderPrec ann m) => MonadPrettyPrec w ann fmt m | m -> w, m -> ann, m -> fmt
 
 -- Operations
 
@@ -82,15 +103,21 @@ closed alM arM aM = do
   arM
 
 parens :: (MonadPrettyPrec w ann fmt m) => m () -> m ()
-parens = closed (text "(") (text ")") . align
+parens aM = do
+  (lp, lpA) <- askLParen
+  (rp, rpA) <- askRParen 
+  let lpD = maybe id annotate lpA $ text lp 
+      rpD = maybe id annotate rpA $ text rp
+  closed lpD rpD $ align aM
 
 atLevel :: (MonadPrettyPrec w ann fmt m) => Int -> m () -> m ()
 atLevel i' aM = do
   i <- askLevel
   b <- askBumped
+  let aM' = localLevel (const i') $ localBumped (const False) aM
   if i < i' || (i == i' && not b)
-    then localLevel (const i') $ localBumped (const False) aM
-    else parens aM
+    then aM'
+    else parens aM'
 
 bump :: (MonadPrettyPrec w ann fmt m) => m a -> m a
 bump = localBumped $ const True
@@ -114,9 +141,22 @@ app :: (MonadPrettyPrec w ann fmt m) => m () -> [m ()] -> m ()
 app x xs = atLevel 100 $ hvsep $ x : map (align . bump) xs
 
 collection :: (MonadPrettyPrec w ann fmt m) => m () -> m () -> m () -> [m ()] -> m ()
-collection open close _   []     = open >> close
-collection open close sep (x:xs) = grouped $ hvsepTight $ concat
-  [ pure $ hsepTight [open, botLevel $ align x]
-  , flip map xs $ \ x' -> hsep [sep, botLevel $ align x']
-  , pure $ close
-  ]
+collection open close sep = Pretty.collection open close sep . map botLevel
+
+-- Monad Transformer
+
+newtype PrecT ann m a = PrecT { unPrecT :: ReaderT (PrecEnv ann) m a }
+  deriving
+  ( Functor, Monad, Applicative, Alternative, MonadTrans
+  , MonadState s, MonadWriter o
+  )
+
+runPrecT :: PrecEnv ann -> PrecT ann m a -> m a
+runPrecT pr xM = runReaderT (unPrecT xM) pr
+
+instance (MonadReader r m) => MonadReader r (PrecT ann m) where
+  ask = PrecT $ lift ask
+  local f = PrecT . mapReaderT (local f) . unPrecT
+instance (Monad m) => MonadReaderPrec ann (PrecT ann m) where
+  askPrecEnv = PrecT ask
+  localPrecEnv f = PrecT . local f . unPrecT

@@ -24,17 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Pretty hiding (collection)
-import ExtPrec hiding 
-  ( parens
-  , atLevel
-  , bump
-  , inf
-  , infl
-  , infr
-  , pre
-  , post
-  , app
-  )
+import ExtPrec
 import RenderHTML
 
 -- The Language
@@ -97,62 +87,20 @@ kwd = Class "kwd"
 opr :: Ann
 opr = Class "opr"
 
--- combinators which use them
-
-parens :: (MonadPrettyPrec w Ann fmt m) => m () -> m ()
-parens = closed (annotate pun (text "(")) (annotate pun (text ")")) . align
-
-atLevel :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m ()
-atLevel i' aM = do
-  i <- askLevel
-  b <- askBumped
-  let aM' = localLevel (const i') $ localBumped (const False) aM
-  if i < i' || (i == i' && not b)
-    then aM'
-    else parens aM'
-
-bump :: (MonadPrettyPrec w Ann fmt m) => m a -> m a
-bump = localBumped $ const True
-
-inf :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m () -> m () -> m ()
-inf i oM x1M x2M = atLevel i $ hsep [ bump x1M, oM, bump x2M ]
-
-infl :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m () -> m () -> m ()
-infl i oM x1M x2M = atLevel i $ hsep [ x1M, oM, bump x2M ]
-
-infr :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m () -> m () -> m ()
-infr i oM x1M x2M = atLevel i $ hsep [ bump x1M, oM,  x2M ]
-
-pre :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m () -> m ()
-pre i oM xM = atLevel i $ hsep [ oM, xM ]
-
-post :: (MonadPrettyPrec w Ann fmt m) => Int -> m () -> m () -> m ()
-post i oM xM = atLevel i $ hsep [ xM, oM ]
-
-app :: (MonadPrettyPrec w Ann fmt m) => m () -> [m ()] -> m ()
-app x xs = atLevel 100 $ hvsep $ x : map (align . bump) xs
-
--- baking a DocM that will work
-
-newtype DocM a = DocM { unDocM :: RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) (ReaderT PrecEnv Maybe) a }
+newtype DocM a = DocM { unDocM :: PrecT Ann (RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) Maybe) a }
   deriving
-    ( Functor, Applicative, Monad
-    , MonadReader (PEnv Int Ann ()), MonadWriter (POut Int Ann), MonadState (PState Int ()), Alternative
+    ( Functor, Applicative, Monad, Alternative
+    , MonadReader (PEnv Int Ann ()), MonadWriter (POut Int Ann), MonadState (PState Int ())
+    , MonadReaderPrec Ann
     )
+instance MonadPretty Int Ann () DocM
+instance MonadPrettyPrec Int Ann () DocM
 
 instance Measure Int () DocM where
   measure = return . runIdentity . measure
 
-instance MonadPretty Int Ann () DocM
-
-instance MonadReaderPrec DocM where
-  askPrecEnv = DocM $ lift ask
-  localPrecEnv f = DocM . mapRWST (local f) . unDocM
-
-instance MonadPrettyPrec Int Ann () DocM
-
-runDocM :: PEnv Int Ann () -> PrecEnv -> PState Int () -> DocM a -> Maybe (PState Int (), POut Int Ann, a)
-runDocM e pe s d = (\(a,s',o) -> (s',o,a)) <$> runReaderT (runRWST (unDocM d) e s) pe
+runDocM :: PEnv Int Ann () -> PrecEnv Ann -> PState Int () -> DocM a -> Maybe (PState Int (), POut Int Ann, a)
+runDocM e pe s d = (\(a,s',o) -> (s',o,a)) <$> runRWST (runPrecT pe $ unDocM d) e s
 
 -- Doc
 
@@ -185,9 +133,6 @@ instance Pretty Doc where
 
 instance Pretty Text where
   pretty = text . T.pack . show
-
-instance (Pretty a) => Pretty [a] where
-  pretty = collection (annotate pun "[") (annotate pun "]") (annotate pun ",") . map pretty
 
 -- printing expressions
 
@@ -229,7 +174,7 @@ e1 = Lam "x" Int $ Var "x"
 -- then lam x . x 
 -- else (lam y . y) (ifz 1 then 2 else 3)
 e2 :: Exp
-e2 = Ifz ((Lit 1 /-/ Lit 2 /+/ (Lit 3 /-/ Lit 4)) /*/ (Lit 5 /// Lit 7))
+e2 = Ifz ((Lit 1 /-/ Lit 2 /+/ (Lit 3 /-/ Lit 4)) /*/ (Lit 5 /// Lit 7) /+/ Lit 8)
          (Lam "x" Int $ Var "x")
          ((Lam "y" Int $ Var "y") /@/ (Ifz (Lit 1) (Lit 2) (Lit 3)))
 
