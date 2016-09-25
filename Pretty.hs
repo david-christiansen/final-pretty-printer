@@ -89,6 +89,9 @@ data PEnv w ann fmt = PEnv
 askMaxWidth :: (MonadReader (PEnv w ann fmt) m) => m w
 askMaxWidth = maxWidth <$> ask
 
+localMaxWidth :: (MonadReader (PEnv w ann fmt) m) => (w -> w) -> m a -> m a
+localMaxWidth f = local $ \ r -> r { maxWidth = f (maxWidth r) }
+
 askMaxRibbon :: (MonadReader (PEnv w ann fmt) m) => m w
 askMaxRibbon = maxRibbon <$> ask
 
