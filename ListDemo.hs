@@ -97,7 +97,11 @@ renderAtom :: Atom Int -> String
 renderAtom (AChunk c) = renderChunk c
 renderAtom ANewline = "\n"
 
-render :: forall m ann . Monad m => (ann -> m ()) -> (ann -> m ()) -> (String -> m ()) -> POut Int ann -> m ()
+render :: forall m ann .
+          Monad m
+       => (ann -> m ()) -> (ann -> m ())
+       -> (String -> m ())
+       -> POut Int ann -> m ()
 render start end str out = render' out
   where
     render' :: POut Int ann -> m ()
