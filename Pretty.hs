@@ -101,8 +101,11 @@ localNesting f = local $ \ r -> r { nesting = f (nesting r) }
 askFormat :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m fmt
 askFormat = formatting <$> ask
 
-localFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => fmt -> m a -> m a
-localFormat format = local $ \ r -> r { formatting =  formatting r `mappend` format }
+localFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => (fmt -> fmt) -> m a -> m a
+localFormat f = local $ \ r -> r { formatting = f (formatting r) }
+
+pushFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => fmt -> m a -> m a
+pushFormat format = localFormat (flip mappend format )
 
 askFormatAnn :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m (ann -> fmt)
 askFormatAnn = formatAnn <$> ask
@@ -157,10 +160,6 @@ chunk c = do
 text :: (MonadPretty w ann fmt m) => Text -> m ()
 text t = chunk $ CText t
 
--- not exported
-phantom :: (MonadPretty w ann fmt m) => w -> m ()
-phantom w = tell $ PAtom $ AChunk $ CSpace w
-
 space :: (MonadPretty w ann fmt m) => w -> m ()
 space w = chunk $ CSpace w
 
@@ -203,7 +202,7 @@ align aM = do
 annotate :: (MonadPretty w ann fmt m) => ann -> m a -> m a
 annotate ann aM = do
   newFormat <- askFormatAnn <*> pure ann
-  localFormat newFormat . censor (PAnn ann) $ aM
+  pushFormat newFormat . censor (PAnn ann) $ aM
 
 -- higher level stuff
 
