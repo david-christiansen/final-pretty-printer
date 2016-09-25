@@ -22,6 +22,8 @@ import Data.List
 import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 import Pretty hiding (collection)
 import ExtPrec
@@ -87,7 +89,12 @@ kwd = Class "kwd"
 opr :: Ann
 opr = Class "opr"
 
-newtype DocM a = DocM { unDocM :: PrecT Ann (RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) Maybe) a }
+type TEnv = Map Text Text
+
+tEnv0 :: TEnv
+tEnv0 = Map.empty
+
+newtype DocM a = DocM { unDocM :: PrecT Ann (RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) (ReaderT TEnv Maybe)) a }
   deriving
     ( Functor, Applicative, Monad, Alternative
     , MonadReader (PEnv Int Ann ()), MonadWriter (POut Int Ann), MonadState (PState Int ())
@@ -99,8 +106,14 @@ instance MonadPrettyPrec Int Ann () DocM
 instance Measure Int () DocM where
   measure = return . runIdentity . measure
 
-runDocM :: PEnv Int Ann () -> PrecEnv Ann -> PState Int () -> DocM a -> Maybe (PState Int (), POut Int Ann, a)
-runDocM e pe s d = (\(a,s',o) -> (s',o,a)) <$> runRWST (runPrecT pe $ unDocM d) e s
+runDocM :: PEnv Int Ann () -> PrecEnv Ann -> TEnv -> PState Int () -> DocM a -> Maybe (PState Int (), POut Int Ann, a)
+runDocM e pe te s d = (\(a,s',o) -> (s',o,a)) <$> runReaderT (runRWST (runPrecT pe $ unDocM d) e s) te
+
+askTEnv :: DocM TEnv
+askTEnv = DocM $ lift $ lift ask
+
+localTEnv :: (TEnv -> TEnv) -> DocM a -> DocM a
+localTEnv f = DocM . mapPrecT (mapRWST (local f)) . unDocM
 
 -- Doc
 
@@ -108,7 +121,7 @@ type Doc = DocM ()
 
 execDoc :: Doc -> POut Int Ann
 execDoc d =
-  let rM = runDocM env0 precEnv0 state0 d
+  let rM = runDocM env0 precEnv0 tEnv0 state0 d
   in case rM of
     Nothing -> PAtom $ AChunk $ CText "<internal pretty printing error>"
     Just (_, o, ()) -> o
@@ -136,6 +149,10 @@ instance Pretty Text where
 
 -- printing expressions
 
+ftTy :: Ty -> Text
+ftTy Int = "Int"
+ftTy (Arr t1 t2) = ftTy t1 `T.append` " -> " `T.append` ftTy t2
+
 ppOp :: Op -> Doc -> Doc -> Doc
 ppOp Plus x1 x2 = infl 20 (annotate opr "+") (grouped x1) (grouped x2)
 ppOp Minus x1 x2 = infl 20 (annotate opr "-") (grouped x1) (grouped x2)
@@ -150,9 +167,12 @@ ppExp (Ifz e1 e2 e3) = grouped $ atLevel 10 $ hvsep
   , grouped $ nest 2 $ hvsep [ annotate kwd "then" , botLevel $ ppExp e2 ]
   , grouped $ nest 2 $ hvsep [ annotate kwd "else" , ppExp e3 ]
   ]
-ppExp (Var x) = annotate var $ text x
-ppExp (Lam x ty e) = grouped $ atLevel 10 $ nest 2 $ hvsep
-  [ hsep [ annotate kwd "lam" , annotate bdr $ text x , annotate pun "." ]
+ppExp (Var x) = do
+  tEnv <- askTEnv
+  let tt = tEnv Map.! x
+  annotate (Tooltip tt) $ annotate var $ text x
+ppExp (Lam x ty e) = localTEnv (Map.insert x $ ftTy ty) $ grouped $ atLevel 10 $ nest 2 $ hvsep
+  [ hsep [ annotate kwd "lam" , annotate (Tooltip $ ftTy ty) $ annotate bdr $ text x , annotate pun "." ]
   , ppExp e
   ]
 ppExp (App e1 e2) = app (ppExp e1) [ppExp e2]

@@ -29,4 +29,5 @@ library
     , mtl  == 2.2.*
     , text == 1.2.*
     , ansi-terminal == 0.6.*
+    , containers == 0.5.*
   -- hs-source-dirs:

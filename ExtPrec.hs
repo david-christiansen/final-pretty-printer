@@ -154,6 +154,9 @@ newtype PrecT ann m a = PrecT { unPrecT :: ReaderT (PrecEnv ann) m a }
 runPrecT :: PrecEnv ann -> PrecT ann m a -> m a
 runPrecT pr xM = runReaderT (unPrecT xM) pr
 
+mapPrecT :: (m a -> n b) -> PrecT ann m a -> PrecT ann n b
+mapPrecT f = PrecT . mapReaderT f . unPrecT
+
 instance (MonadReader r m) => MonadReader r (PrecT ann m) where
   ask = PrecT $ lift ask
   local f = PrecT . mapReaderT (local f) . unPrecT
