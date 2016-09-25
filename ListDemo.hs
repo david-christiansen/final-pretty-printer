@@ -95,25 +95,15 @@ renderAtom (AChunk c) = renderChunk c
 renderAtom ANewline = "\n"
 
 render :: forall m ann . Monad m => (ann -> m ()) -> (ann -> m ()) -> (String -> m ()) -> POut Int ann -> m ()
-render start end str out = flip evalStateT [] $ render' out
+render start end str out = render' out
   where
-    push :: ann -> StateT [ann] m ()
-    push a = modify (a:)
-
-    pop :: StateT [ann] m ann
-    pop = do
-      (a:as) <- get
-      put as
-      pure a
-
-    render' :: POut Int ann -> StateT [ann] m ()
-    render' PNull = lift $ str ""
-    render' (PAtom a) = lift . str $ renderAtom a
+    render' :: POut Int ann -> m ()
+    render' PNull = str ""
+    render' (PAtom a) = str $ renderAtom a
     render' (PSeq o1 o2) = do
       render' o1
       render' o2
-    render' (PAnnStart a) = push a >> lift (start a)
-    render' PAnnEnd = pop >>= lift . end
+    render' (PAnn a o) = start a >> render' o >> end a
 
 
 instance Show Doc where

@@ -33,8 +33,7 @@ type Line w fmt = [(Chunk w, fmt)]
 data POut w ann =
     PNull
   | PAtom (Atom w)
-  | PAnnStart ann
-  | PAnnEnd
+  | PAnn ann (POut w ann)
   | PSeq (POut w ann) (POut w ann)
   deriving (Eq, Ord, Functor)
 
@@ -204,11 +203,7 @@ align aM = do
 annotate :: (MonadPretty w ann fmt m) => ann -> m a -> m a
 annotate ann aM = do
   newFormat <- askFormatAnn <*> pure ann
-  localFormat newFormat $ do
-    tell $ PAnnStart ann
-    res <- aM
-    tell $ PAnnEnd
-    return res
+  localFormat newFormat . censor (PAnn ann) $ aM
 
 -- higher level stuff
 
