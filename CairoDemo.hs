@@ -25,6 +25,7 @@ import qualified Data.Text as T
 
 import Graphics.Rendering.Cairo
 import Graphics.Rendering.Pango.Cairo
+import Graphics.Rendering.Pango.Context
 import Graphics.Rendering.Pango.Layout
 
 import Pretty
@@ -195,32 +196,39 @@ data RenderState = MkRenderState
   , renderFormatting :: [PangoFmt]
   }
 
-type Renderer a = StateT RenderState Render a
+data RenderContext = MkRenderContext
+  { renderContext :: PangoContext }
+
+type Renderer a = ReaderT RenderContext (StateT RenderState IO) a
+
+askContext :: Renderer PangoContext
+askContext = renderContext <$> ask
 
 terpri :: Renderer ()
 terpri = do
   h <- renderLineHeight <$> get
   w <- renderLineHeight <$> get
-  (x, y) <- lift getCurrentPoint
-  lift $ moveTo (x - w) (h + y)
+  (x, y) <- lift $ lift getCurrentPoint
+  lift . lift $ moveTo (x - w) (h + y)
   modify $ \ s ->
     s { renderLineHeight = 0.0
       , renderLineWidth  = 0.0
       }
 
-forward :: Double -> Renderer ()
-forward w = do
-  (x, y) <- lift getCurrentPoint
-  modify $ \ s ->
-    s { renderLineWidth = renderLineWidth s + w }
-  lift $ moveTo (x + w) y
+-- forward :: Double -> Renderer ()
+-- forward w = do
+--   (x, y) <- lift . lift $ getCurrentPoint
+--   modify $ \ s ->
+--     s { renderLineWidth = renderLineWidth s + w }
+--   lift . lift $ moveTo (x + w) y
 
 -- addStr :: Text -> Renderer ()
 -- addStr txt = do
 --   fmt <- renderFormatting <$> get
 --   let withMarkup = makeMarkup fmt txt
-  
---   layoutPath
+--   layou <- 
+--   (x, y) <- lift . lift $ getCurrentPoint
+--   lift . lift $ layoutPath withMarkup
 
 -- renderChunk :: Chunk Double -> String
 -- renderChunk (CText t) = T.unpack t

@@ -1,0 +1,24 @@
+.lit {
+  color: red;
+}
+
+.pun {
+  color: gray;
+}
+
+.bdr {
+  color: blue;
+}
+
+.kwd {
+  color: darkgoldenrod;
+  text-decoration: underline;
+}
+
+.opr {
+  color: purple;
+}
+
+.var {
+  font-style: oblique;
+}
