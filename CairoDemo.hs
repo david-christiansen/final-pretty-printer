@@ -204,16 +204,35 @@ type Renderer a = ReaderT RenderContext (StateT RenderState IO) a
 askContext :: Renderer PangoContext
 askContext = renderContext <$> ask
 
-terpri :: Renderer ()
-terpri = do
-  h <- renderLineHeight <$> get
-  w <- renderLineHeight <$> get
-  (x, y) <- lift $ lift getCurrentPoint
-  lift . lift $ moveTo (x - w) (h + y)
-  modify $ \ s ->
-    s { renderLineHeight = 0.0
-      , renderLineWidth  = 0.0
-      }
+-- A little test to work out the API
+testImage :: String -> IO ()
+testImage outname = do
+  withImageSurface FormatARGB32 800 600 $ \ surf -> do
+    fopts <- fontOptionsCreate
+    fontOptionsSetAntialias fopts AntialiasGray
+    ctxt <- cairoCreateContext Nothing
+    lay <- layoutEmpty ctxt
+    (layoutSetMarkup lay (T.pack "<i>hello</i>\n world") :: IO String)
+    renderWith surf $ do
+      setFontOptions fopts
+      setSourceRGB 1 1 1
+      rectangle 0.0 0.0 800.0 600.0
+      fill
+      setSourceRGB 0 0 0
+      layoutPath lay
+      fill
+    surfaceWriteToPNG surf outname
+
+-- terpri :: Renderer ()
+-- terpri = do
+--   h <- renderLineHeight <$> get
+--   w <- renderLineHeight <$> get
+--   (x, y) <- lift $ lift getCurrentPoint
+--   lift . lift $ moveTo (x - w) (h + y)
+--   modify $ \ s ->
+--     s { renderLineHeight = 0.0
+--       , renderLineWidth  = 0.0
+--       }
 
 -- forward :: Double -> Renderer ()
 -- forward w = do
