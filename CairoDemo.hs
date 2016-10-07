@@ -204,6 +204,14 @@ type Renderer a = ReaderT RenderContext (StateT RenderState IO) a
 askContext :: Renderer PangoContext
 askContext = renderContext <$> ask
 
+addLayoutAt :: Double -> Double -> Surface -> PangoLayout -> IO Double
+addLayoutAt x y surf lay = do
+  w <- getWidth . fst <$> layoutGetExtents lay
+  renderWith surf $ do
+    moveTo x y
+    showLayout lay
+  return (x + w)
+
 -- A little test to work out the API
 testImage :: String -> IO ()
 testImage outname = do
@@ -218,9 +226,9 @@ testImage outname = do
       setSourceRGB 1 1 1
       rectangle 0.0 0.0 800.0 600.0
       fill
-      setSourceRGB 0 0 0
-      layoutPath lay
-      fill
+    x <- addLayoutAt 0 0 surf lay
+    (layoutSetMarkup lay (T.pack "more <b>test</b>") :: IO String)
+    addLayoutAt x 0 surf lay
     surfaceWriteToPNG surf outname
 
 -- terpri :: Renderer ()
