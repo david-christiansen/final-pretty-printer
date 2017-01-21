@@ -22,7 +22,10 @@ import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 
-data Chunk w = CText Text | CSpace w
+data Chunk w = 
+    CText Text -- should not contain formatting spaces or newlines
+               -- (semantic/object-level spaces OK, but not newlines)
+  | CSpace w
   deriving (Eq, Ord)
 
 data Atom w = AChunk (Chunk w) | ANewline
@@ -146,6 +149,7 @@ modifyLine :: (MonadState (PState w fmt) m) => (Line w fmt -> Line w fmt) -> m (
 modifyLine f = modify $ \ s -> s { curLine = f (curLine s) }
 
 -- not exported
+-- this is the core algorithm.
 chunk :: (MonadPretty w ann fmt m) => Chunk w -> m ()
 chunk c = do
   tell $ PAtom $ AChunk c
@@ -159,6 +163,12 @@ chunk c = do
     n <- askNesting
     when (n + w > wmax) empty
     when (w     > rmax) empty
+
+-- this interacts with chunk, and can either be distributive (Hughes PP) or
+-- left-zero (Wadler PP) by instantiating m with [] or Maybe, (or ID for no
+-- grouping) (probability monad????)
+grouped :: (MonadPretty w ann fmt m) => m a -> m a
+grouped aM = ifFlat aM $ (makeFlat . allowFail) aM <|> aM
 
 text :: (MonadPretty w ann fmt m) => Text -> m ()
 text t = chunk $ CText t
@@ -192,9 +202,6 @@ makeFlat = localLayout $ const Flat
 
 allowFail :: (MonadPretty w ann fmt m) => m a -> m a
 allowFail = localFailure $ const CanFail
-
-grouped :: (MonadPretty w ann fmt m) => m a -> m a
-grouped aM = ifFlat aM $ (makeFlat . allowFail) aM <|> aM
 
 align :: (MonadPretty w ann fmt m) => m a -> m a
 align aM = do
