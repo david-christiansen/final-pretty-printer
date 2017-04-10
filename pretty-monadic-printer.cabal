@@ -14,20 +14,27 @@ cabal-version:       >=1.10
 
 library
   default-language: Haskell2010
-  exposed-modules:  Pretty, ListDemo, STLCDemo, Exts.ExtPrec, RenderHTML
-  -- other-modules:
+  exposed-modules:
+                  Pretty
+                , Words
+                , Exts.ExtPrec
+                , Rendering.RenderHTML
+                , Rendering.RenderConsole
+  other-modules:
+                Demos.STLCDemo
+              , Demos.ListDemo
   other-extensions:
-      KindSignatures
-    , MultiParamTypeClasses
-    , FunctionalDependencies
-    , ConstraintKinds
-    , ScopedTypeVariables
-    , DeriveFunctor
-    , FlexibleContexts
+                   KindSignatures
+                 , MultiParamTypeClasses
+                 , FunctionalDependencies
+                 , ConstraintKinds
+                 , ScopedTypeVariables
+                 , DeriveFunctor
+                 , FlexibleContexts
   build-depends:
-      base == 4.9.*
-    , mtl  == 2.2.*
-    , text == 1.2.*
-    , ansi-terminal == 0.6.*
-    , containers == 0.5.*
+                base == 4.9.*
+              , mtl  == 2.2.*
+              , text == 1.2.*
+              , ansi-terminal == 0.6.*
+              , containers == 0.5.*
   -- hs-source-dirs:
