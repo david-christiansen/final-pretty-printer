@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module STLCDemo where
+module Demos.STLCDemo where
 
 import Control.Monad
 import Control.Applicative
@@ -26,8 +26,11 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Pretty hiding (collection)
-import ExtPrec
-import RenderHTML
+import Exts.ExtPrec
+import Rendering.RenderHTML
+
+data Ann = Class Text | Tooltip Text
+  deriving (Eq, Ord, Show)
 
 -- The Language
 
@@ -133,8 +136,12 @@ instance Monoid Doc where
   mempty = return ()
   mappend = (>>)
 
+renderAnnotation :: Ann -> Text -> Text
+renderAnnotation (Class c) t = mconcat [ "<span class='" , c , "'>" , t , "</span>" ]
+renderAnnotation (Tooltip p) t = mconcat [ "<span title='" , p , "'>" , t , "</span>" ]
+
 instance Show Doc where
-  show = T.unpack . render . execDoc
+  show = T.unpack . (render renderAnnotation) . execDoc
 
 -- Pretty Class for this Doc
 

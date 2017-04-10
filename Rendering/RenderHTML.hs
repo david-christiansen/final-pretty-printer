@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module RenderHTML where
+module Rendering.RenderHTML where
 
 import Control.Monad
 import Control.Applicative
@@ -25,9 +25,6 @@ import qualified Data.Text as T
 
 import Pretty
 
-data Ann = Class Text | Tooltip Text
-  deriving (Eq, Ord, Show)
-
 renderChunk :: Chunk Int -> Text
 renderChunk (CText t) = t
 renderChunk (CSpace w) = T.replicate w " "
@@ -39,12 +36,11 @@ renderAtom (AChunk c) = T.concatMap swapSpace $ renderChunk c
     swapSpace c = T.singleton c
 renderAtom ANewline = "<br/>"
 
-renderAnnotation :: Ann -> Text -> Text
-renderAnnotation (Class c) t = mconcat [ "<span class='" , c , "'>" , t , "</span>" ]
-renderAnnotation (Tooltip p) t = mconcat [ "<span title='" , p , "'>" , t , "</span>" ]
-
-render :: POut Int Ann -> Text
-render PNull = ""
-render (PAtom a) = renderAtom a
-render (PSeq o1 o2) = render o1 `T.append` render o2
-render (PAnn a o) = renderAnnotation a $ render o
+render :: forall ann . (ann -> Text -> Text) -> POut Int ann -> Text
+render renderAnnotation out = render' out
+  where render' :: POut Int ann -> Text
+        render' pout = case pout of
+          PNull -> T.pack ""
+          PAtom a -> renderAtom a
+          PSeq o₁ o₂ -> render' o₁ `T.append` render' o₂
+          PAnn a o -> renderAnnotation a $ render' o

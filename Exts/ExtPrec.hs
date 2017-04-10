@@ -11,7 +11,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module ExtPrec where
+module Exts.ExtPrec where
 
 import Control.Monad
 import Control.Applicative

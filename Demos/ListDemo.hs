@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ListDemo where
+module Demos.ListDemo where
 
 import Control.Monad
 import Control.Applicative
@@ -26,6 +26,7 @@ import qualified Data.Text as T
 import System.Console.ANSI
 
 import Pretty
+import Rendering.RenderConsole
 
 -- Constructor names or built-in syntax
 data HsAnn = Ctor | Stx
@@ -89,49 +90,25 @@ instance Pretty Text where
 instance (Pretty a) => Pretty [a] where
   pretty = collection (annotate Stx "[") (annotate Stx "]") (annotate Stx ",") . map pretty
 
-renderChunk :: Chunk Int -> String
-renderChunk (CText t) = T.unpack t
-renderChunk (CSpace w) = replicate w ' '
+toSGR :: HsAnn -> [SGR]
+toSGR Ctor = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red]
+toSGR Stx  = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Black]
+  
+updateColor :: forall ann . StateT [HsAnn] IO ()
+updateColor =
+  lift . setSGR =<< mconcat . map toSGR . reverse <$> get
 
-renderAtom :: Atom Int -> String
-renderAtom (AChunk c) = renderChunk c
-renderAtom ANewline = "\n"
+openTag :: HsAnn -> StateT [HsAnn] IO ()
+openTag ann = modify (ann:) >> updateColor
 
-render :: forall m ann . Monad m => (ann -> m ()) -> (ann -> m ()) -> (String -> m ()) -> POut Int ann -> m ()
-render start end str out = render' out
-  where
-    render' :: POut Int ann -> m ()
-    render' PNull = str ""
-    render' (PAtom a) = str $ renderAtom a
-    render' (PSeq o1 o2) = do
-      render' o1
-      render' o2
-    render' (PAnn a o) = start a >> render' o >> end a
+closeTag :: HsAnn -> StateT [HsAnn] IO ()
+closeTag _  = modify tail   >> updateColor
 
+renderAnnotation :: HsAnn -> StateT [HsAnn] IO () -> StateT [HsAnn] IO ()
+renderAnnotation a o = openTag a >> o >> closeTag a
 
-instance Show Doc where
-  show = snd . runWriter . render (const (pure ())) (const (pure ())) tell . execDoc
-
-toHtml :: Doc -> String
-toHtml = snd . runWriter . render openTag closeTag tell . execDoc
-  where openTag Ctor = tell "<span class=\"constructor\">"
-        openTag Stx  = tell "<span class=\"syntax\">"
-        closeTag _   = tell "</span>"
-
-dumpDoc :: Doc -> IO ()
-dumpDoc = flip evalStateT [] . render openTag closeTag out . execDoc
-  where out :: String -> StateT [HsAnn] IO ()
-        out = lift . putStr
-        toSGR :: HsAnn -> [SGR]
-        toSGR Ctor = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red]
-        toSGR Stx  = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Black]
-        updateColor :: StateT [HsAnn] IO ()
-        updateColor =
-          lift . setSGR =<< mconcat . map toSGR . reverse <$> get
-        openTag :: HsAnn -> StateT [HsAnn] IO ()
-        openTag ann = modify (ann:) >> updateColor
-        closeTag :: HsAnn -> StateT [HsAnn] IO ()
-        closeTag _  = modify tail   >> updateColor
+dumpList :: Doc -> IO ()
+dumpList = dumpDoc toSGR renderAnnotation . execDoc
 
 ---------------
 -- Test docs --
