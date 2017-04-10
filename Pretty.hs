@@ -173,6 +173,9 @@ grouped aM = ifFlat aM $ (makeFlat . allowFail) aM <|> aM
 text :: (MonadPretty w ann fmt m) => Text -> m ()
 text t = chunk $ CText t
 
+char :: (MonadPretty w ann fmt m) => Char -> m ()
+char c = chunk $ CText $ T.pack [c]
+
 space :: (MonadPretty w ann fmt m) => w -> m ()
 space w = chunk $ CSpace w
 
