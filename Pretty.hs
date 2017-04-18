@@ -164,35 +164,50 @@ chunk c = do
     when (n + w > wmax) empty
     when (w     > rmax) empty
 
--- this interacts with chunk, and can either be distributive (Hughes PP) or
+-- grouped interacts with chunk, and can either be distributive (Hughes PP) or
 -- left-zero (Wadler PP) by instantiating m with [] or Maybe, (or ID for no
 -- grouping) (probability monad????)
+
+-- | Group a collection of pretty-printer actions, undoing their newlines if possible.
+-- If m is [], grouping has a distributive Hughes-style semantics, and if m is Maybe,
+-- then grouping has a Wadler-style left-zero semantics. The identity monad gives no
+-- grouping.
 grouped :: (MonadPretty w ann fmt m) => m a -> m a
 grouped aM = ifFlat aM $ (makeFlat . allowFail) aM <|> aM
 
+-- | Include a Text string in the document.
 text :: (MonadPretty w ann fmt m) => Text -> m ()
 text t = chunk $ CText t
 
+-- | Include a single character in the document.
 char :: (MonadPretty w ann fmt m) => Char -> m ()
 char c = chunk $ CText $ T.pack [c]
 
+-- | Include a space of a given width in the document.
 space :: (MonadPretty w ann fmt m) => w -> m ()
 space w = chunk $ CSpace w
 
+-- | Include a line break that will not be undone by grouping. This is to support
+-- languages with semantically-meaningful newlines.
 hardLine :: (MonadPretty w ann fmt m) => m ()
 hardLine = do
   tell $ PAtom ANewline
   putCurLine []
 
+-- | Include a line break that will be undone by grouping. This notion of newline
+-- is perhaps better understood as an opportunity for a line break.
 newline :: (MonadPretty w ann fmt m) => m ()
 newline = do
   n <- askNesting
   hardLine
   space n
 
+-- | Increase the nesting level to render some argument, which will result in the
+-- document being indented following newlines.
 nest :: (MonadPretty w ann fmt m) => w -> m a -> m a
 nest = localNesting . (+)
 
+-- | Conditionally render documents based on whether grouping is undoing newlines.
 ifFlat :: (MonadPretty w ann fmt m) => m a -> m a -> m a
 ifFlat flatAction breakAction = do
   l <- askLayout
@@ -200,18 +215,22 @@ ifFlat flatAction breakAction = do
     Flat -> flatAction
     Break -> breakAction
 
+-- | Unconditionally undo newlines in a document.
 makeFlat :: (MonadPretty w ann fmt m) => m a -> m a
 makeFlat = localLayout $ const Flat
 
 allowFail :: (MonadPretty w ann fmt m) => m a -> m a
 allowFail = localFailure $ const CanFail
 
+-- | Vertically align documents.
 align :: (MonadPretty w ann fmt m) => m a -> m a
 align aM = do
   n <- askNesting
   w :: w <- measureCurLine
   nest (w - n) aM
 
+-- | Add a semantic annotation to a document. These annotations are converted into
+-- the output stream's notion of decoration by the renderer.
 annotate :: (MonadPretty w ann fmt m) => ann -> m a -> m a
 annotate ann aM = do
   newFormat <- askFormatAnn <*> pure ann
@@ -219,12 +238,16 @@ annotate ann aM = do
 
 -- higher level stuff
 
+-- | Separate a collection of documents with a space character.
 hsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hsep = sequence_ . intersperse (text " ")
 
+-- | Separate a collection of documents with an undoable newline.
 vsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 vsep = sequence_ . intersperse newline
 
+-- | Separate a collection of documents with a space (if there's room)
+-- or a newline if not.
 hvsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hvsep = grouped . sequence_ . intersperse (ifFlat (space 1) newline)
 
