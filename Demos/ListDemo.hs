@@ -14,6 +14,7 @@ module Demos.ListDemo where
 
 import Control.Monad
 import Control.Applicative
+import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State

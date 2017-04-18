@@ -10,10 +10,33 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pretty where
+module Pretty
+  ( MonadPretty
+  , Measure(..)
+  , PState(..)
+  , PEnv(..)
+  , Failure(..)
+  , Layout(..)
+  , Chunk(..)
+  , Atom(..)
+  , POut(..)
+  , align
+  , space
+  , collection
+  , grouped
+  , nest
+  , text
+  , char
+  , annotate
+  , hsep
+  , vsep
+  , hvsep
+  , localMaxWidth
+  ) where
 
 import Control.Monad
 import Control.Applicative
+import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
@@ -46,16 +69,6 @@ instance Monoid (POut w ann) where
 
 class Measure w fmt m | m -> w, m -> fmt where
   measure :: Line w fmt -> m w
-
-data Identity a = Identity { runIdentity :: a }
-  deriving (Functor)
-instance Applicative Identity where
-  pure = Identity
-  Identity f <*> Identity x = Identity $ f x
-
-instance Monad Identity where
-  return = pure
-  Identity x >>= f = f x
 
 instance Measure Int () Identity where
   measure = pure . sum . fmap (chunkLength . fst)
