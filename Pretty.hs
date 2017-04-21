@@ -259,13 +259,23 @@ hsep = sequence_ . intersperse (text " ")
 vsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 vsep = sequence_ . intersperse newline
 
+-- | Measure the width of a space in the current font
+spaceWidth :: (MonadPretty w ann fmt m) => m w
+spaceWidth = do
+  format <- askFormat
+  measure [(CText " ", format)]
+
 -- | Separate a collection of documents with a space (if there's room)
 -- or a newline if not.
 hvsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
-hvsep = grouped . sequence_ . intersperse (ifFlat (space 1) newline)
+hvsep docs = do
+  i <- spaceWidth
+  grouped $ sequence_ $ intersperse (ifFlat (space i) newline) $ docs
 
 hsepTight :: (MonadPretty w ann fmt m) => [m ()] -> m ()
-hsepTight = sequence_ . intersperse (ifFlat (return ()) (space 1))
+hsepTight docs = do
+  i <- spaceWidth
+  sequence_ $ intersperse (ifFlat (return ()) (space i)) $ docs
 
 hvsepTight :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hvsepTight = grouped . sequence_ . intersperse (ifFlat (return ()) newline)
