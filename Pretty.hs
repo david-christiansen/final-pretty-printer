@@ -32,6 +32,7 @@ module Pretty
   , vsep
   , hvsep
   , localMaxWidth
+  , spaceWidth
   ) where
 
 import Control.Monad
