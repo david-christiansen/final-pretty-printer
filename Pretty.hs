@@ -34,6 +34,7 @@ module Pretty
   , localMaxWidth
   , spaceWidth
   , newline
+  , ifFlat
   ) where
 
 import Control.Monad
@@ -209,8 +210,8 @@ hardLine = do
   tell $ PAtom ANewline
   putCurLine []
 
--- | Include a line break that will be undone by grouping. This notion of newline
--- is perhaps better understood as an opportunity for a line break.
+-- | Include a line break that will not be undone by grouping and that
+-- respects the current nesting level.
 newline :: (MonadPretty w ann fmt m) => m ()
 newline = do
   n <- askNesting
@@ -257,7 +258,7 @@ annotate ann aM = do
 hsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hsep = sequence_ . intersperse (text " ")
 
--- | Separate a collection of documents with an undoable newline.
+-- | Separate a collection of documents with newlines.
 vsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 vsep = sequence_ . intersperse newline
 
