@@ -33,6 +33,7 @@ module Pretty
   , hvsep
   , localMaxWidth
   , spaceWidth
+  , newline
   ) where
 
 import Control.Monad
