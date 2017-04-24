@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rendering.RenderConsole where
+module Text.PrettyPrint.Final.Rendering.HTML where
 
 import Control.Monad
 import Control.Applicative
@@ -23,29 +23,24 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import System.Console.ANSI
-
-import Pretty
+import Text.PrettyPrint.Final
 
 renderChunk :: Chunk Int -> Text
 renderChunk (CText t) = t
 renderChunk (CSpace w) = T.replicate w " "
 
 renderAtom :: Atom Int -> Text
-renderAtom (AChunk c) = renderChunk c
-renderAtom ANewline = "\n"
+renderAtom (AChunk c) = T.concatMap swapSpace $ renderChunk c
+  where
+    swapSpace ' ' = "&nbsp;"
+    swapSpace c = T.singleton c
+renderAtom ANewline = "<br/>"
 
-render :: forall m ann . Monad m => (ann -> m ()-> m ()) -> (Text -> m ()) -> POut Int ann -> m ()
-render renderAnnotation str out = render' out
-  where render' :: POut Int ann -> m ()
+render :: forall ann . (ann -> Text -> Text) -> POut Int ann -> Text
+render renderAnnotation out = render' out
+  where render' :: POut Int ann -> Text
         render' pout = case pout of
-          PNull      -> str ""
-          PAtom a    -> str $ renderAtom a
-          PSeq o₁ o₂ -> do render' o₁
-                           render' o₂
-          PAnn a o   -> renderAnnotation a $ render' o
-
-dumpDoc :: forall ann . (ann -> [SGR]) -> (ann -> StateT [ann] IO () -> StateT [ann] IO ()) -> POut Int ann -> IO ()
-dumpDoc toSGR renderAnnotation = flip evalStateT [] . render renderAnnotation (lift . putStr . T.unpack) 
-  
-          
+          PNull -> T.pack ""
+          PAtom a -> renderAtom a
+          PSeq o₁ o₂ -> render' o₁ `T.append` render' o₂
+          PAnn a o -> renderAnnotation a $ render' o

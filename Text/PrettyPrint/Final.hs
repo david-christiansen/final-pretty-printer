@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Pretty
+module Text.PrettyPrint.Final
   ( MonadPretty
   , Measure(..)
   , PState(..)

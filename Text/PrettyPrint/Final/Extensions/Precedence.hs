@@ -11,7 +11,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Exts.ExtPrec where
+module Text.PrettyPrint.Final.Extensions.Precedence where
 
 import Control.Monad
 import Control.Applicative
@@ -24,7 +24,7 @@ import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Pretty
+import Text.PrettyPrint.Final as Final
 
 env0 :: (Num w) => PEnv w ann ()
 env0 = PEnv
@@ -141,7 +141,7 @@ app :: (MonadPrettyPrec w ann fmt m) => m () -> [m ()] -> m ()
 app x xs = atLevel 100 $ hvsep $ x : map (align . bump) xs
 
 collection :: (MonadPrettyPrec w ann fmt m) => m () -> m () -> m () -> [m ()] -> m ()
-collection open close sep = Pretty.collection open close sep . map botLevel
+collection open close sep = Final.collection open close sep . map botLevel
 
 -- Monad Transformer
 

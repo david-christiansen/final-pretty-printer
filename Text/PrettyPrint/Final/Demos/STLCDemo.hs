@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Demos.STLCDemo where
+module Text.PrettyPrint.Final.Demos.STLCDemo where
 
 import Control.Monad
 import Control.Applicative
@@ -26,9 +26,9 @@ import qualified Data.Text as T
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Pretty hiding (collection)
-import Exts.ExtPrec
-import Rendering.RenderHTML
+import Text.PrettyPrint.Final hiding (collection)
+import Text.PrettyPrint.Final.Extensions.Precedence
+import Text.PrettyPrint.Final.Rendering.HTML
 
 data Ann = Class Text | Tooltip Text
   deriving (Eq, Ord, Show)

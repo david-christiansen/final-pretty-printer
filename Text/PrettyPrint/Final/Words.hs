@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Words where
+module Text.PrettyPrint.Final.Words where
 
 import Control.Monad
 import Control.Applicative
@@ -22,7 +22,7 @@ import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Pretty
+import Text.PrettyPrint.Final
 
 equals :: (MonadPretty w ann fmt m) => m ()
 equals = char '='

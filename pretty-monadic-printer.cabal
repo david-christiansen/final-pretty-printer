@@ -4,7 +4,7 @@ version:             0.1.0.0
 -- description:
 license:             MIT
 license-file:        LICENSE
-author:              David Christiansen and David Darais
+author:              David Christiansen and David Darais and Weixi Ma
 maintainer:          david.darais@gmail.com
 -- copyright:
 category:            Text
@@ -15,14 +15,14 @@ cabal-version:       >=1.10
 library
   default-language: Haskell2010
   exposed-modules:
-                  Pretty
-                , Words
-                , Exts.ExtPrec
-                , Rendering.RenderHTML
-                , Rendering.RenderConsole
+                  Text.PrettyPrint.Final
+                , Text.PrettyPrint.Final.Words
+                , Text.PrettyPrint.Final.Extensions.Precedence
+                , Text.PrettyPrint.Final.Rendering.HTML
+                , Text.PrettyPrint.Final.Rendering.Console
   other-modules:
-                Demos.STLCDemo
-              , Demos.ListDemo
+                Text.PrettyPrint.Final.Demos.STLCDemo
+              , Text.PrettyPrint.Final.Demos.ListDemo
   other-extensions:
                    KindSignatures
                  , MultiParamTypeClasses

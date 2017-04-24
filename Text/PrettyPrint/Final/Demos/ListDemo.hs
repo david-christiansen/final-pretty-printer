@@ -10,7 +10,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Demos.ListDemo where
+module Text.PrettyPrint.Final.Demos.ListDemo where
 
 import Control.Monad
 import Control.Applicative
@@ -26,8 +26,8 @@ import qualified Data.Text as T
 
 import System.Console.ANSI
 
-import Pretty
-import Rendering.RenderConsole
+import Text.PrettyPrint.Final
+import Text.PrettyPrint.Final.Rendering.Console
 
 -- Constructor names or built-in syntax
 data HsAnn = Ctor | Stx
@@ -94,7 +94,7 @@ instance (Pretty a) => Pretty [a] where
 toSGR :: HsAnn -> [SGR]
 toSGR Ctor = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Red]
 toSGR Stx  = [SetConsoleIntensity BoldIntensity, SetColor Foreground Vivid Black]
-  
+
 updateColor :: forall ann . StateT [HsAnn] IO ()
 updateColor =
   lift . setSGR =<< mconcat . map toSGR . reverse <$> get
