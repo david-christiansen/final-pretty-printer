@@ -33,6 +33,7 @@ module Text.PrettyPrint.Final
   , hvsep
   , localMaxWidth
   , spaceWidth
+  , emWidth
   , newline
   , ifFlat
   ) where
@@ -267,6 +268,13 @@ spaceWidth :: (MonadPretty w ann fmt m) => m w
 spaceWidth = do
   format <- askFormat
   measure [(CText " ", format)]
+
+-- | Measure the width of a capital M in the current font
+emWidth :: (MonadPretty w ann fmt m) => m w
+emWidth = do
+  format <- askFormat
+  measure [(CText "M", format)]
+
 
 -- | Separate a collection of documents with a space (if there's room)
 -- or a newline if not.
