@@ -26,22 +26,6 @@ import qualified Data.Text as T
 
 import Text.PrettyPrint.Final as Final
 
-env0 :: (Num w) => PEnv w ann ()
-env0 = PEnv
-  { maxWidth = 80
-  , maxRibbon = 60
-  , layout = Break
-  , failure = CantFail
-  , nesting = 0
-  , formatting = mempty
-  , formatAnn = const mempty
-  }
-
-state0 :: PState Int ()
-state0 = PState
-  { curLine = []
-  }
-
 -- Environment for Prec extension
 
 data PrecEnv ann = PrecEnv

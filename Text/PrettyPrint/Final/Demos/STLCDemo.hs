@@ -121,6 +121,23 @@ localTEnv f = DocM . mapPrecT (mapRWST (local f)) . unDocM
 
 -- Doc
 
+env0 :: (Num w) => PEnv w ann ()
+env0 = PEnv
+  { maxWidth = 80
+  , maxRibbon = 60
+  , layout = Break
+  , failure = CantFail
+  , nesting = 0
+  , formatting = mempty
+  , formatAnn = const mempty
+  }
+
+state0 :: PState Int ()
+state0 = PState
+  { curLine = []
+  }
+
+
 type Doc = DocM ()
 
 execDoc :: Doc -> POut Int Ann
