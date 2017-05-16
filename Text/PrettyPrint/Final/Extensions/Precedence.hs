@@ -11,7 +11,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Text.PrettyPrint.Final.Extensions.Precedence where
+module Text.PrettyPrint.Final.Extensions.Precedence
+  ( PrecEnv(..)
+  , precEnv0
+  , MonadReaderPrec(..)
+  , MonadPrettyPrec(..)
+  , PrecT(..)
+  , runPrecT
+  , mapPrecT
+  , askLevel
+  , localLevel
+  , infl
+  , infr
+  , atLevel
+  , botLevel
+  , app
+  , askBumped
+  ) where
 
 import Control.Monad
 import Control.Applicative
@@ -144,6 +160,7 @@ mapPrecT f = PrecT . mapReaderT f . unPrecT
 instance (MonadReader r m) => MonadReader r (PrecT ann m) where
   ask = PrecT $ lift ask
   local f = PrecT . mapReaderT (local f) . unPrecT
+
 instance (Monad m) => MonadReaderPrec ann (PrecT ann m) where
   askPrecEnv = PrecT ask
   localPrecEnv f = PrecT . local f . unPrecT

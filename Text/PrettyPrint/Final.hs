@@ -89,7 +89,9 @@ class
   , MonadWriter (POut w ann) m
   , MonadState (PState w fmt) m
   , Alternative m
-  ) => MonadPretty (w :: *) (ann :: *) (fmt :: *) (m :: * -> *) | m -> w, m -> ann, m -> fmt where
+  ) => MonadPretty w ann fmt m
+       | m -> w, m -> ann, m -> fmt
+  where
 
 data Layout = Flat | Break
   deriving (Eq, Ord)

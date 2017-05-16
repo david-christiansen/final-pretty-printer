@@ -17,6 +17,7 @@ library
   exposed-modules:
                   Text.PrettyPrint.Final
                 , Text.PrettyPrint.Final.Words
+                , Text.PrettyPrint.Final.Extensions.Environment
                 , Text.PrettyPrint.Final.Extensions.Precedence
                 , Text.PrettyPrint.Final.Rendering.HTML
                 , Text.PrettyPrint.Final.Rendering.Console

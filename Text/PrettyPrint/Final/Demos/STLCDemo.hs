@@ -27,6 +27,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Text.PrettyPrint.Final hiding (collection)
+import Text.PrettyPrint.Final.Extensions.Environment
 import Text.PrettyPrint.Final.Extensions.Precedence
 import Text.PrettyPrint.Final.Rendering.HTML
 
@@ -98,26 +99,27 @@ type TEnv = Map Text Text
 tEnv0 :: TEnv
 tEnv0 = Map.empty
 
-newtype DocM a = DocM { unDocM :: PrecT Ann (RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) (ReaderT TEnv Maybe)) a }
+newtype DocM a = DocM { unDocM :: EnvT TEnv (PrecT Ann (RWST (PEnv Int Ann ()) (POut Int Ann) (PState Int ()) Maybe)) a }
   deriving
     ( Functor, Applicative, Monad, Alternative
     , MonadReader (PEnv Int Ann ()), MonadWriter (POut Int Ann), MonadState (PState Int ())
-    , MonadReaderPrec Ann
+    , MonadReaderPrec Ann, MonadReaderEnv TEnv
     )
 instance MonadPretty Int Ann () DocM
 instance MonadPrettyPrec Int Ann () DocM
+instance MonadPrettyEnv TEnv Int Ann () DocM
 
 instance Measure Int () DocM where
   measure = return . runIdentity . measure
 
 runDocM :: PEnv Int Ann () -> PrecEnv Ann -> TEnv -> PState Int () -> DocM a -> Maybe (PState Int (), POut Int Ann, a)
-runDocM e pe te s d = (\(a,s',o) -> (s',o,a)) <$> runReaderT (runRWST (runPrecT pe $ unDocM d) e s) te
+runDocM e pe te s d = (\(a,s',o) -> (s',o,a)) <$> runRWST (runPrecT pe (runEnvT te $ unDocM d)) e s
 
 askTEnv :: DocM TEnv
-askTEnv = DocM $ lift $ lift ask
+askTEnv = askEnv
 
 localTEnv :: (TEnv -> TEnv) -> DocM a -> DocM a
-localTEnv f = DocM . mapPrecT (mapRWST (local f)) . unDocM
+localTEnv f = localEnv f
 
 -- Doc
 
