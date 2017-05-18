@@ -33,6 +33,7 @@ module Text.PrettyPrint.Final
   , vsep
   , hvsep
   , localMaxWidth
+  , measureText
   , spaceWidth
   , emWidth
   , newline
@@ -266,18 +267,18 @@ hsep = sequence_ . intersperse (text " ")
 vsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 vsep = sequence_ . intersperse newline
 
+measureText :: (MonadPretty w ann fmt m) => Text -> m w
+measureText txt = do
+  format <- askFormat
+  measure [(CText txt, format)]
+
 -- | Measure the width of a space in the current font
 spaceWidth :: (MonadPretty w ann fmt m) => m w
-spaceWidth = do
-  format <- askFormat
-  measure [(CText " ", format)]
+spaceWidth = measureText " "
 
 -- | Measure the width of a capital M in the current font
 emWidth :: (MonadPretty w ann fmt m) => m w
-emWidth = do
-  format <- askFormat
-  measure [(CText "M", format)]
-
+emWidth = measureText "M"
 
 -- | Separate a collection of documents with a space (if there's room)
 -- or a newline if not.
