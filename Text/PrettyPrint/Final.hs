@@ -24,6 +24,7 @@ module Text.PrettyPrint.Final
   , space
   , collection
   , grouped
+  , expr
   , nest
   , text
   , char
@@ -301,3 +302,6 @@ collection open close sep (x:xs) = grouped $ hvsepTight $ concat
   , pure close
   ]
 
+-- | Align and group a subdocument, similar to Wadler's group combinator.
+expr :: MonadPretty w ann fmt m => m a -> m a
+expr = align . grouped
