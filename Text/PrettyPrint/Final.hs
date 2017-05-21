@@ -32,6 +32,8 @@ module Text.PrettyPrint.Final
   , hsep
   , vsep
   , hvsep
+  , hsepTight
+  , hvsepTight
   , localMaxWidth
   , measureText
   , spaceWidth
