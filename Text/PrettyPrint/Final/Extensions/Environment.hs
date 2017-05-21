@@ -26,7 +26,10 @@ class MonadReaderEnv env m where
   askEnv :: m env
   localEnv :: (env -> env) -> m a -> m a
 
-class (MonadPretty w ann fmt m, MonadReaderEnv env m) => MonadPrettyEnv env w ann fmt m | m -> w, m -> ann, m -> fmt, m -> env where
+class ( MonadPretty w ann fmt m
+      , MonadReaderEnv env m
+      ) => MonadPrettyEnv env w ann fmt m
+      | m -> w, m -> ann, m -> fmt, m -> env where
 
 
 newtype EnvT env m a = EnvT { unEnvT :: ReaderT env m a }
