@@ -21,6 +21,7 @@ library
                 , Text.PrettyPrint.Final.Extensions.Precedence
                 , Text.PrettyPrint.Final.Rendering.HTML
                 , Text.PrettyPrint.Final.Rendering.Console
+                , Text.PrettyPrint.Final.Rendering.PlainText
   other-modules:
                 Text.PrettyPrint.Final.Demos.STLCDemo
               , Text.PrettyPrint.Final.Demos.ListDemo
@@ -38,4 +39,6 @@ library
               , text == 1.2.*
               , ansi-terminal == 0.6.*
               , containers == 0.5.*
+              , temporary >= 1.1
+              , exceptions == 0.8.*
   -- hs-source-dirs:
