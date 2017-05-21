@@ -207,7 +207,7 @@ ppExp (Lam x ty e) = localTEnv (Map.insert x $ ftTy ty) $ grouped $ atLevel 10 $
   [ hsep [ annotate kwd "lam" , annotate (Tooltip $ ftTy ty) $ annotate bdr $ text x , annotate pun "." ]
   , ppExp e
   ]
-ppExp (App e1 e2) = app (ppExp e1) [ppExp e2]
+ppExp (App e1 e2) = expr $ app (ppExp e1) [ppExp e2]
 ppExp (Raw d) = d
 
 precDebug :: Doc
@@ -234,31 +234,8 @@ genExp :: Int -> Exp
 genExp 0 = Var "x"
 genExp n = App (genExp $ n - 1) (genExp $ n - 1)
 
-test = pretty . genExp
+test = show . localMaxWidth (const 15) . pretty . genExp
 
 main = defaultMain [
-  bgroup "pretty" [ bench "1"  $ whnf test 1
-                  , bench "5"  $ whnf test 5
-                  , bench "100"  $ whnf test 100
-                  , bench "1000" $ whnf test 1000
-                  , bench "10000" $ whnf test 10000
-                  ] ]
-
-  
-  {-
-fib m | m < 0     = error "negative!"
-      | otherwise = go m
-  where
-    go 0 = 0
-    go 1 = 1
-    go n = go (n-1) + go (n-2)
-
-    
-main = defaultMain [
-  bgroup "fib" [ bench "1"  $ whnf fib 1
-               , bench "5"  $ whnf fib 5
-               , bench "9"  $ whnf fib 9
-               , bench "11" $ whnf fib 11
-               ]
-  ]
--}
+  bgroup "pretty" [ bench (show x) $ whnf test x
+                  | x <- [1 .. 15]]]
