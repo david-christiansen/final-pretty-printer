@@ -22,7 +22,7 @@ import Control.Monad.Writer
 import Text.PrettyPrint.Final as Final
 import Text.PrettyPrint.Final.Extensions.Precedence
 
-class MonadReaderEnv env m where
+class MonadReaderEnv env m | m -> env where
   askEnv :: m env
   localEnv :: (env -> env) -> m a -> m a
 
