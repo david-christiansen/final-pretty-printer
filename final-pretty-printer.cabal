@@ -31,7 +31,7 @@ cabal-version:       >=1.10
 
 source-repository head
   type:     git
-  location: https://github.com/davdar/final-pretty-printer
+  location: git://github.com/davdar/final-pretty-printer.git
 
 library
   default-language: Haskell2010
