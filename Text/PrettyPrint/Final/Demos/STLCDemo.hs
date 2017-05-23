@@ -10,7 +10,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.PrettyPrint.Final.Demos.STLCDemo where
+-- | A demonstration of the precedence and environment extensions
+module Text.PrettyPrint.Final.Demos.STLCDemo () where
 
 import Control.Monad
 import Control.Applicative

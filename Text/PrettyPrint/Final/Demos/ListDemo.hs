@@ -10,7 +10,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.PrettyPrint.Final.Demos.ListDemo where
+-- | A demo of annotations
+module Text.PrettyPrint.Final.Demos.ListDemo () where
 
 import Control.Monad
 import Control.Applicative
