@@ -10,36 +10,57 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+Module      : Text.PrettyPrint.Final
+Description : The core of the Final Pretty Printer
+Copyright   : (c) David Darais, David Christiansen, and Weixi Ma 2016-2017
+License     : MIT
+Maintainer  : david.darais@gmail.com
+Stability   : experimental
+Portability : Portable
+
+This module is the core of the Final Pretty Printer.
+-}
 module Text.PrettyPrint.Final
-  ( MonadPretty
+  ( -- * Pretty monads and measurement
+    MonadPretty
   , Measure(..)
-  , PState(..)
-  , PEnv(..)
-  , Failure(..)
-  , Layout(..)
-  , Chunk(..)
-  , Atom(..)
-  , POut(..)
-  , align
-  , space
-  , collection
-  , grouped
-  , expr
-  , nest
+    -- * Atomic documents
   , text
   , char
+  , space
+    -- * Semantic annotations
   , annotate
+    -- * Grouping, alignment, and newlines
+  , newline
+  , hardLine
+  , ifFlat
+  , grouped
+  , align
+  , nest
+  , expr
+    -- * Measuring space
+  , measureText
+  , spaceWidth
+  , emWidth
+    -- * Separators
   , hsep
   , vsep
   , hvsep
   , hsepTight
   , hvsepTight
+    -- * Helpers for common tasks
+  , collection
+    -- * Auxiliary datatypes
+  , PState(..)
+  , Line
+  , PEnv(..)
   , localMaxWidth
-  , measureText
-  , spaceWidth
-  , emWidth
-  , newline
-  , ifFlat
+  , Failure(..)
+  , Layout(..)
+  , Chunk(..)
+  , Atom(..)
+  , POut(..)
   ) where
 
 import Control.Monad
@@ -53,29 +74,43 @@ import Data.List
 import Data.Text (Text)
 import qualified Data.Text as T
 
-data Chunk w = 
-    CText Text -- should not contain formatting spaces or newlines
-               -- (semantic/object-level spaces OK, but not newlines)
-  | CSpace w
+-- | Strings or horizontal space to be displayed
+data Chunk w =
+    CText Text -- ^ An atomic string. Should not contain formatting
+               -- spaces or newlines (semantic/object-level spaces OK,
+               -- but not newlines)
+  | CSpace w   -- ^ An amount of horizontal space to insert.
   deriving (Eq, Ord)
 
-data Atom w = AChunk (Chunk w) | ANewline
+-- | Atomic pieces of output from the pretty printer
+data Atom w =
+    AChunk (Chunk w) -- ^ Inclusion of chunks
+  | ANewline         -- ^ Newlines to be displayed
   deriving (Eq, Ord)
 
+-- | A current line under consideration for insertion of breaks
 type Line w fmt = [(Chunk w, fmt)]
 
+-- | Pretty printer output represents a single annotated string.
 data POut w ann =
-    PNull
-  | PAtom (Atom w)
-  | PAnn ann (POut w ann)
-  | PSeq (POut w ann) (POut w ann)
+    PNull -- ^ The empty output
+  | PAtom (Atom w) -- ^ Atomic output
+  | PAnn ann (POut w ann) -- ^ An annotated region of output
+  | PSeq (POut w ann) (POut w ann) -- ^ The concatenation of two outputs
   deriving (Eq, Ord, Functor)
 
 instance Monoid (POut w ann) where
   mempty = PNull
   mappend = PSeq
 
+-- | Monad @m@ can measure lines formatted by @fmt@, getting width @w@.
+--
+-- For example, monospaced pretty printing can be measured in 'Identity', using
+-- an 'Int' character count. For proportional fonts, @w@ will typically be something
+-- like 'Double', and @m@ will be 'IO' to support observing the behavior of a font
+-- rendering library.
 class Measure w fmt m | m -> w, m -> fmt where
+  -- | Measure a particular line
   measure :: Line w fmt -> m w
 
 instance Measure Int () Identity where
@@ -84,6 +119,11 @@ instance Measure Int () Identity where
       chunkLength (CText t) = T.length t
       chunkLength (CSpace w) = w
 
+-- | Pretty printing can be done in any pretty monad.
+--
+-- Pretty monads have an additional law: failure (from 'Alternative')
+-- must undo the writer and state effects. So @RWST@ applied to
+-- @Maybe@ is fine, but @MaybeT@ of @RWS@ is not.
 class
   ( Ord w, Num w
   , Monoid fmt
@@ -97,24 +137,41 @@ class
        | m -> w, m -> ann, m -> fmt
   where
 
+-- | Is the pretty printer attempting to put things on one long line?
 data Layout = Flat | Break
   deriving (Eq, Ord)
+
+-- | Is there a failure handler to allow backtracking from the current line?
 data Failure = CanFail | CantFail
   deriving (Eq, Ord)
 
+-- | The dynamic context of a pretty printing computation
 data PEnv w ann fmt = PEnv
   { maxWidth :: w
+    -- ^ The maximum page width to use
   , maxRibbon :: w
+    -- ^ The maximum amount of non-indentation space to use on one line
   , nesting :: w
+    -- ^ The current indentation level
   , layout :: Layout
+    -- ^ Whether lines are presently being broken or not
   , failure :: Failure
-  , formatting :: fmt -- ^ A stack of formatting codes to be combined with the monoid op
+    -- ^ Whether there is a failure handler waiting to backgrack from laying out a line
+  , formatting :: fmt
+    -- ^ A stack of formatting codes to be combined with the monoid op
   , formatAnn :: ann -> fmt
+    -- ^ A means of formatting annotations during rendering. This
+    -- provides an opportunity for annotations to affect aspects of
+    -- the output, like font selection, that can have an impact on the
+    -- width.  If this does not agree with the formatting chosen in
+    -- the final display, then odd things might happen, so the same
+    -- information should be used here if possible.
   }
 
 askMaxWidth :: (MonadReader (PEnv w ann fmt) m) => m w
 askMaxWidth = maxWidth <$> ask
 
+-- | Locally change the maximum horizontal space
 localMaxWidth :: (MonadReader (PEnv w ann fmt) m) => (w -> w) -> m a -> m a
 localMaxWidth f = local $ \ r -> r { maxWidth = f (maxWidth r) }
 
@@ -154,6 +211,7 @@ askFailure = failure <$> ask
 localFailure :: (MonadReader (PEnv w ann fmt) m) => (Failure -> Failure) -> m a -> m a
 localFailure f = local $ \ r -> r { failure = f (failure r) }
 
+-- | The current state of the pretty printer consists of the line under consideration.
 data PState w fmt = PState
   { curLine :: Line w fmt
   }
@@ -210,15 +268,13 @@ char c = chunk $ CText $ T.pack [c]
 space :: (MonadPretty w ann fmt m) => w -> m ()
 space w = chunk $ CSpace w
 
--- | Include a line break that will not be undone by grouping. This is to support
--- languages with semantically-meaningful newlines.
+-- | A line break that ignores nesting
 hardLine :: (MonadPretty w ann fmt m) => m ()
 hardLine = do
   tell $ PAtom ANewline
   putCurLine []
 
--- | Include a line break that will not be undone by grouping and that
--- respects the current nesting level.
+-- | A lie break that respects nesting
 newline :: (MonadPretty w ann fmt m) => m ()
 newline = do
   n <- askNesting
@@ -269,6 +325,11 @@ hsep = sequence_ . intersperse (text " ")
 vsep :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 vsep = sequence_ . intersperse newline
 
+-- | Measure a string in the current pretty printing context.
+--
+-- Make sure to measure the text in the same dynamic context where its
+-- width is to be used, to make sure the right formatting options are
+-- applied.
 measureText :: (MonadPretty w ann fmt m) => Text -> m w
 measureText txt = do
   format <- askFormat
@@ -289,14 +350,31 @@ hvsep docs = do
   i <- spaceWidth
   grouped $ sequence_ $ intersperse (ifFlat (space i) newline) $ docs
 
+-- | Separate a collection of documents with no space if they can be
+-- on the same line, or with the width of a space character in
+-- when they cannot.
 hsepTight :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hsepTight docs = do
   i <- spaceWidth
   sequence_ $ intersperse (ifFlat (return ()) (space i)) $ docs
 
+-- | Separate a collection of documents with no space if they can be
+-- on the same line, or with newlines if they cannot.
 hvsepTight :: (MonadPretty w ann fmt m) => [m ()] -> m ()
 hvsepTight = grouped . sequence_ . intersperse (ifFlat (return ()) newline)
 
+-- | Print a collection in comma-initial form.
+--
+-- For sub-documents @d1@, @d2@, @d3@, flat mode is:
+--
+-- > [d1, d2, d3]
+--
+-- and multi-line mode is:
+--
+-- > [ d1
+-- > , d2
+-- > , d3
+-- > ]
 collection :: (MonadPretty w ann fmt m) => m () -> m () -> m () -> [m ()] -> m ()
 collection open close _   []     = open >> close
 collection open close sep (x:xs) = grouped $ hvsepTight $ concat
@@ -305,6 +383,6 @@ collection open close sep (x:xs) = grouped $ hvsepTight $ concat
   , pure close
   ]
 
--- | Align and group a subdocument, similar to Wadler's group combinator.
+-- | Align and group a subdocument, similar to Wadler's @group@ combinator.
 expr :: MonadPretty w ann fmt m => m a -> m a
 expr = align . grouped
