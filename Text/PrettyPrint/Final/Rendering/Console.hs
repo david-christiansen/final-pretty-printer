@@ -57,7 +57,7 @@ render renderAnnotation str out = render' out
         render' pout = case pout of
           PNull      -> str ""
           PAtom a    -> str $ renderAtom a
-          PSeq o₁ o₂ -> do render' o₁
+          PSeq o1 o1 -> do render' o1
                            render' o₂
           PAnn a o   -> renderAnnotation a $ render' o
 
