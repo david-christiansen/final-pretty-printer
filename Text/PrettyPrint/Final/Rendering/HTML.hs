@@ -58,5 +58,5 @@ render renderAnnotation out = render' out
         render' pout = case pout of
           PNull -> T.pack ""
           PAtom a -> renderAtom a
-          PSeq o₁ o₂ -> render' o₁ `T.append` render' o₂
+          PSeq o1 o2 -> render' o1 `T.append` render' o2
           PAnn a o -> renderAnnotation a $ render' o
