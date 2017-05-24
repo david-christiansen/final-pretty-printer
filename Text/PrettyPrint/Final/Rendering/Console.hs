@@ -57,8 +57,8 @@ render renderAnnotation str out = render' out
         render' pout = case pout of
           PNull      -> str ""
           PAtom a    -> str $ renderAtom a
-          PSeq o1 o1 -> do render' o1
-                           render' o₂
+          PSeq o1 o2 -> do render' o1
+                           render' o2
           PAnn a o   -> renderAnnotation a $ render' o
 
 -- | Dump pretty printer output to a console.
