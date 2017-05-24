@@ -167,23 +167,23 @@ data PEnv w ann fmt = PEnv
     -- information should be used here if possible.
   }
 
-askMaxWidth :: (MonadReader (PEnv w ann fmt) m) => m w
+askMaxWidth :: (Functor m, MonadReader (PEnv w ann fmt) m) => m w
 askMaxWidth = maxWidth <$> ask
 
 -- | Locally change the maximum horizontal space
 localMaxWidth :: (MonadReader (PEnv w ann fmt) m) => (w -> w) -> m a -> m a
 localMaxWidth f = local $ \ r -> r { maxWidth = f (maxWidth r) }
 
-askMaxRibbon :: (MonadReader (PEnv w ann fmt) m) => m w
+askMaxRibbon :: (Functor m, MonadReader (PEnv w ann fmt) m) => m w
 askMaxRibbon = maxRibbon <$> ask
 
-askNesting :: (MonadReader (PEnv w ann fmt) m) => m w
+askNesting :: (Functor m, MonadReader (PEnv w ann fmt) m) => m w
 askNesting = nesting <$> ask
 
 localNesting :: (MonadReader (PEnv w ann fmt) m) => (w -> w) -> m a -> m a
 localNesting f = local $ \ r -> r { nesting = f (nesting r) }
 
-askFormat :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m fmt
+askFormat :: (Functor m, MonadReader (PEnv w ann fmt) m, Monoid fmt) => m fmt
 askFormat = formatting <$> ask
 
 localFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => (fmt -> fmt) -> m a -> m a
@@ -192,19 +192,19 @@ localFormat f = local $ \ r -> r { formatting = f (formatting r) }
 pushFormat :: (Monoid fmt, MonadReader (PEnv w ann fmt) m) => fmt -> m a -> m a
 pushFormat format = localFormat (flip mappend format )
 
-askFormatAnn :: (MonadReader (PEnv w ann fmt) m, Monoid fmt) => m (ann -> fmt)
+askFormatAnn :: (Functor m, MonadReader (PEnv w ann fmt) m, Monoid fmt) => m (ann -> fmt)
 askFormatAnn = formatAnn <$> ask
 
 localFormatAnn :: (MonadReader (PEnv w ann fmt) m) => ((ann -> fmt) -> (ann -> fmt)) -> m a -> m a
 localFormatAnn f = local $ \ r -> r { formatAnn = f (formatAnn r) }
 
-askLayout :: (MonadReader (PEnv w ann fmt) m) => m Layout
+askLayout :: (Functor m, MonadReader (PEnv w ann fmt) m) => m Layout
 askLayout = layout <$> ask
 
 localLayout :: (MonadReader (PEnv w ann fmt) m) => (Layout -> Layout) -> m a -> m a
 localLayout f = local $ \ r -> r { layout = f (layout r) }
 
-askFailure :: (MonadReader (PEnv w ann fmt) m) => m Failure
+askFailure :: (Functor m, MonadReader (PEnv w ann fmt) m) => m Failure
 askFailure = failure <$> ask
 
 localFailure :: (MonadReader (PEnv w ann fmt) m) => (Failure -> Failure) -> m a -> m a
@@ -216,7 +216,7 @@ data PState w fmt = PState
   }
   deriving (Eq, Ord)
 
-getCurLine :: (MonadState (PState w fmt) m) => m (Line w fmt)
+getCurLine :: (Functor m, MonadState (PState w fmt) m) => m (Line w fmt)
 getCurLine = curLine <$> get
 
 putCurLine :: (MonadState (PState w fmt) m) => Line w fmt -> m ()
