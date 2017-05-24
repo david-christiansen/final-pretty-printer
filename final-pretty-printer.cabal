@@ -50,12 +50,11 @@ library
                    KindSignatures
                  , MultiParamTypeClasses
                  , FunctionalDependencies
-                 , ConstraintKinds
                  , ScopedTypeVariables
                  , DeriveFunctor
                  , FlexibleContexts
   build-depends:
-                base >= 4.3
+                base >= 4.3 && < 4.10
               , mtl  == 2.2.*
               , text == 1.2.*
               , ansi-terminal == 0.6.*
