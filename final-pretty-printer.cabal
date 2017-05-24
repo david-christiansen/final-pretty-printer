@@ -55,7 +55,7 @@ library
                  , FlexibleContexts
   build-depends:
                 base >= 4.3 && < 4.10
-              , mtl  == 2.2.*
+              , mtl  >= 2.1 && < 2.3
               , text == 1.2.*
               , ansi-terminal == 0.6.*
               , containers == 0.5.*
