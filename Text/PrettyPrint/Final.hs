@@ -132,6 +132,7 @@ class
   , MonadWriter (POut w ann) m
   , MonadState (PState w fmt) m
   , Alternative m
+  , Functor m -- for older GHCs
   ) => MonadPretty w ann fmt m
        | m -> w, m -> ann, m -> fmt
   where
