@@ -222,7 +222,7 @@ getCurLine = curLine <$> get
 putCurLine :: (MonadState (PState w fmt) m) => Line w fmt -> m ()
 putCurLine t = modify $ \ s -> s { curLine = t }
 
-measureCurLine :: (Measure w fmt m, Monad m, MonadState (PState w fmt) m) => m w
+measureCurLine :: (Functor m, Measure w fmt m, Monad m, MonadState (PState w fmt) m) => m w
 measureCurLine = measure =<< getCurLine
 
 modifyLine :: (MonadState (PState w fmt) m) => (Line w fmt -> Line w fmt) -> m ()
