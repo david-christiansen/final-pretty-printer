@@ -22,7 +22,7 @@ description:         This is the Final Pretty Printer, an extensible
 license:             MIT
 license-file:        LICENSE
 author:              David Christiansen and David Darais and Weixi Ma
-maintainer:          david.darais@gmail.com
+maintainer:          david@davidchristiansen.dk
 copyright:           Copyright (c) 2016-2017 David Darais, David Christiansen, and Weixi Ma
 category:            Text
 build-type:          Simple
@@ -31,7 +31,7 @@ cabal-version:       >=1.10
 
 source-repository head
   type:     git
-  location: git://github.com/davdar/final-pretty-printer.git
+  location: git://github.com/david-christiansen/final-pretty-printer.git
 
 library
   default-language: Haskell2010
