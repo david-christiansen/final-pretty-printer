@@ -10,7 +10,19 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.PrettyPrint.Final.Rendering.Console where
+{-|
+Module      : Text.PrettyPrint.Final.Rendering.Console
+Description : A renderer for colored monospace text on a console
+Copyright   : (c) David Darais, David Christiansen, and Weixi Ma 2016-2017
+License     : MIT
+Maintainer  : david.darais@gmail.com
+Stability   : experimental
+Portability : Portable
+
+A renderer for colored monospace text on a console.
+-}
+
+module Text.PrettyPrint.Final.Rendering.Console (render, dumpDoc) where
 
 import Control.Monad
 import Control.Applicative
@@ -35,7 +47,12 @@ renderAtom :: Atom Int -> Text
 renderAtom (AChunk c) = renderChunk c
 renderAtom ANewline = "\n"
 
-render :: forall m ann . Monad m => (ann -> m ()-> m ()) -> (Text -> m ()) -> POut Int ann -> m ()
+-- | Render a 'POut' in some monad.
+render :: forall m ann . Monad m
+       => (ann -> m () -> m ()) -- ^ How to transform a rendering based on an annotation
+       -> (Text -> m ())        -- ^ How to output an atomic string
+       -> POut Int ann          -- ^ The document to render
+       -> m ()
 render renderAnnotation str out = render' out
   where render' :: POut Int ann -> m ()
         render' pout = case pout of
@@ -45,7 +62,13 @@ render renderAnnotation str out = render' out
                            render' o₂
           PAnn a o   -> renderAnnotation a $ render' o
 
-dumpDoc :: forall ann . (ann -> [SGR]) -> (ann -> StateT [ann] IO () -> StateT [ann] IO ()) -> POut Int ann -> IO ()
-dumpDoc toSGR renderAnnotation = flip evalStateT [] . render renderAnnotation (lift . putStr . T.unpack) 
-  
-          
+-- | Dump pretty printer output to a console.
+--
+-- In 'IO' to support rendering colors on Windows.
+dumpDoc :: (ann -> [SGR])
+        -> (ann -> StateT [ann] IO () -> StateT [ann] IO ())
+        -> POut Int ann
+        -> IO ()
+dumpDoc toSGR renderAnnotation =
+  flip evalStateT [] .
+  render renderAnnotation (lift . putStr . T.unpack)

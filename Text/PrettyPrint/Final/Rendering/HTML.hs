@@ -10,7 +10,22 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Text.PrettyPrint.Final.Rendering.HTML where
+{-|
+Module      : Text.PrettyPrint.Final.Rendering.HTML
+Description : Monospaced text output to be included in HTML
+Copyright   : (c) David Darais, David Christiansen, and Weixi Ma 2016-2017
+License     : MIT
+Maintainer  : david.darais@gmail.com
+Stability   : experimental
+Portability : Portable
+
+HTML has its own conventions around whitespace and newlines. This
+modules contains a renderer that inserts the appropriate non-breaking
+spaces and line break tags.
+
+-}
+
+module Text.PrettyPrint.Final.Rendering.HTML (render) where
 
 import Control.Monad
 import Control.Applicative
@@ -36,6 +51,8 @@ renderAtom (AChunk c) = T.concatMap swapSpace $ renderChunk c
     swapSpace c = T.singleton c
 renderAtom ANewline = "<br/>"
 
+-- | Render an document to a string suitable for inclusion in HTML.
+-- The HTML should use a monospaced font for the code.
 render :: forall ann . (ann -> Text -> Text) -> POut Int ann -> Text
 render renderAnnotation out = render' out
   where render' :: POut Int ann -> Text
