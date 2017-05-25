@@ -212,7 +212,7 @@ localFailure :: (MonadReader (PEnv w ann fmt) m) => (Failure -> Failure) -> m a 
 localFailure f = local $ \ r -> r { failure = f (failure r) }
 
 -- | The current state of the pretty printer consists of the line under consideration.
-data PState w fmt = PState
+newtype PState w fmt = PState
   { curLine :: Line w fmt
   }
   deriving (Eq, Ord)
