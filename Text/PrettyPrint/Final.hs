@@ -242,8 +242,8 @@ chunk c = do
     rmax <- askMaxRibbon
     w <- measureCurLine
     n <- askNesting
-    when (n + w > wmax) empty
-    when (w     > rmax) empty
+    when (w > wmax) empty
+    when (w - n > rmax) empty
 
 -- grouped interacts with chunk, and can either be distributive (Hughes PP) or
 -- left-zero (Wadler PP) by instantiating m with [] or Maybe, (or ID for no
