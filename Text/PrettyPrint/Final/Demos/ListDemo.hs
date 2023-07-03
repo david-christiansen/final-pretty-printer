@@ -73,9 +73,12 @@ execDoc d =
 
 type Doc = DocM ()
 
+instance Semigroup Doc where
+  (<>) = (>>)
+
 instance Monoid Doc where
   mempty = return ()
-  mappend = (>>)
+  mappend = (<>)
 
 class Pretty a where
   pretty :: a -> Doc

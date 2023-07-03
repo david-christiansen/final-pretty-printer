@@ -40,7 +40,7 @@ data Ty = Int | Arr Ty Ty
 
 data Op = Plus | Minus | Times | Div
 
-data Exp = 
+data Exp =
     Lit Int
   | Bin Op Exp Exp
   | Ifz Exp Exp Exp
@@ -152,9 +152,12 @@ execDoc d =
 instance IsString Doc where
   fromString = text . fromString
 
+instance Semigroup Doc where
+  (<>) = (>>)
+
 instance Monoid Doc where
   mempty = return ()
-  mappend = (>>)
+  mappend = (<>)
 
 renderAnnotation :: Ann -> Text -> Text
 renderAnnotation (Class c) t = mconcat [ "<span class='" , c , "'>" , t , "</span>" ]
@@ -189,7 +192,7 @@ ppOp Div x1 x2 = infl 30 (annotate opr "/") (grouped x1) (grouped x2)
 ppExp :: Exp -> Doc
 ppExp (Lit i) = annotate lit $ text $ T.pack $ show i
 ppExp (Bin o e1 e2) = ppOp o (ppExp e1) (ppExp e2)
-ppExp (Ifz e1 e2 e3) = grouped $ atLevel 10 $ hvsep 
+ppExp (Ifz e1 e2 e3) = grouped $ atLevel 10 $ hvsep
   [ grouped $ nest 2 $ hvsep [ annotate kwd "ifz" , botLevel $ ppExp e1 ]
   , grouped $ nest 2 $ hvsep [ annotate kwd "then" , botLevel $ ppExp e2 ]
   , grouped $ nest 2 $ hvsep [ annotate kwd "else" , ppExp e3 ]
@@ -217,8 +220,8 @@ instance Pretty Exp where
 e1 :: Exp
 e1 = Lam "x" Int $ Var "x"
 
--- ifz ((1 - 2) + (3 - 4)) * (5 / 7) 
--- then lam x . x 
+-- ifz ((1 - 2) + (3 - 4)) * (5 / 7)
+-- then lam x . x
 -- else (lam y . y) (ifz 1 then 2 else 3)
 e2 :: Exp
 e2 = Ifz ((Lit 1 /-/ Lit 2 /+/ (Lit 3 /-/ Lit 4)) /*/ (Lit 5 /// Lit 7) /+/ Lit 8)
