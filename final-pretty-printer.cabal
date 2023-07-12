@@ -54,11 +54,11 @@ library
                  , DeriveFunctor
                  , FlexibleContexts
   build-depends:
-                base >= 4.3 && < 4.10
-              , mtl  >= 2.1 && < 2.3
-              , text == 1.2.*
-              , ansi-terminal == 0.6.*
-              , containers == 0.5.*
+                base >= 4.3 && < 5
+              , mtl  >= 2.1 && < 2.4
+              , text >= 1.2 && < 3
+              , ansi-terminal >= 0.6 && < 1
+              , containers >= 0.5 && < 1
               , temporary >= 1.1
-              , exceptions == 0.8.*
+              , exceptions >= 0.8 && < 1
   -- hs-source-dirs:
